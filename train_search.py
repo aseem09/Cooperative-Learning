@@ -140,15 +140,18 @@ def main():
             indices[split:num_train]),
         pin_memory=True, num_workers=0)
 
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+    scheduler_1 = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer_1, float(args.epochs), eta_min=args.learning_rate_min)
+    scheduler_2 = torch.optim.lr_scheduler.CosineAnnealingLR(
+        optimizer_2, float(args.epochs), eta_min=args.learning_rate_min)
 
     architect = Architect(model_1, model_2, args.c_lambda, args)
 
     for epoch in range(args.epochs):
-        scheduler.step()
+        scheduler_1.step()
+        scheduler_2.step()
 
-        lr = scheduler.get_lr()[0]
+        lr = scheduler_1.get_lr()[0]
 
         logging.info('Epoch %d lr %e', epoch, lr)
         # logging.info('Epoch %d lr %e', epoch, lr_2)

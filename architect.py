@@ -198,29 +198,14 @@ class Architect(object):
         loss_2, logits_2 = self.model_2._loss(input, target)
 
         logits_3 = torch.log10(F.softmax(self.model_1(input), dim=1))
-        logits_4 = torch.log(F.softmax(self.model_2(input), dim=1))
+        logits_4 = torch.log10(F.softmax(self.model_2(input), dim=1))
 
         logits_2 = F.softmax(logits_2, dim=1)
         logits_1 = F.softmax(logits_1, dim=1)
 
-        loss = torch.sum(logits_2*logits_3*-1) + \
+        loss_add = torch.sum(logits_2*logits_3*-1) + \
             torch.sum(logits_1*logits_4*-1)
 
-        # loss_3 = cross_entropy_loss_softmax(input, logits_2, self.model_1)
-        # loss_4 = cross_entropy_loss_softmax(input, logits_1, self.model_2)
-
-        loss = (loss_1 + loss_2) + self.c_lambda * (loss)
-        print("Term 1 = " + str((loss_1 + loss_2)))
-        print("Term 2 = " + str(loss))
+        loss = (loss_1 + loss_2) + self.c_lambda * (loss_add)
 
         return loss
-
-
-def cross_entropy_loss_softmax(input, labels_fake, model):
-    logits = model(input)
-    logits = torch.log(logits)
-    print(logits)
-    print(labels_fake)
-    loss = torch.sum(logits*labels_fake*-1)
-    print(loss)
-    return loss
