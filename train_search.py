@@ -101,9 +101,6 @@ def main():
     model_1 = model_1.cuda()
     model_2 = model_2.cuda()
 
-    # utils.load(model_1, '/content/search-EXP-20201108-231407/weights1.pt')
-    # utils.load(model_2, '/content/search-EXP-20201108-231407/weights2.pt')
-
     logging.info("Param size Model 1 = %fMB",
                  utils.count_parameters_in_MB(model_1))
     logging.info("Param size Model 2 = %fMB",
@@ -154,7 +151,6 @@ def main():
         lr = scheduler_1.get_lr()[0]
 
         logging.info('Epoch %d lr %e', epoch, lr)
-        # logging.info('Epoch %d lr %e', epoch, lr_2)
 
         genotype_1 = model_1.genotype()
         genotype_2 = model_2.genotype()
