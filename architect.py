@@ -27,28 +27,30 @@ class Architect(object):
                                             lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
 
     def _compute_unrolled_model(self, input, target, eta, network_optimizer_1, network_optimizer_2):
-        loss = self._get_loss_val(self, input, target)
-
+        loss_1 = self._get_loss_val(input, target)
         theta_1 = _concat(self.model_1.parameters()).data
+
+        loss_2 = self._get_loss_val(input, target)
         theta_2 = _concat(self.model_2.parameters()).data
 
         try:
             moment_1 = _concat(network_optimizer_1.state[v]['momentum_buffer']
                                for v in self.model_1.parameters()).mul_(self.network_momentum)
+        except:
+            moment_1 = torch.zeros_like(theta_1)
+        dtheta_1 = _concat(torch.autograd.grad(
+            loss_1, self.model_1.parameters())).data + self.network_weight_decay*theta_1
+
+        try:
             moment_2 = _concat(network_optimizer_2.state[v]['momentum_buffer']
                                for v in self.model_2.parameters()).mul_(self.network_momentum)
         except:
-            moment_1 = torch.zeros_like(theta_1)
             moment_2 = torch.zeros_like(theta_2)
-        dtheta_1 = _concat(torch.autograd.grad(
-            loss, self.model_1.parameters())).data + self.network_weight_decay*theta_1
-        dtheta_2 = _concat(torch.autograd.grad(
-            loss, self.model_2.parameters())).data + self.network_weight_decay*theta_2
-        unrolled_model_1 = self._construct_model_from_theta(
-            theta_1.sub(eta, moment_1+dtheta_1))
-        unrolled_model_2 = self._construct_model_from_theta(
-            theta_2.sub(eta, moment_2+dtheta_2))
 
+        dtheta_2 = _concat(torch.autograd.grad(
+            loss_2, self.model_2.parameters())).data + self.network_weight_decay*theta_2
+
+        unrolled_model_1, unrolled_model_2 = self._construct_model_from_theta( theta_1.sub(eta, moment_1+dtheta_1), theta_2.sub(eta, moment_2+dtheta_2))
         return unrolled_model_1, unrolled_model_2
 
     def step(self, input_train, target_train, input_valid, target_valid, eta, network_optimizer_1, network_optimizer_2, unrolled):
@@ -107,32 +109,46 @@ class Architect(object):
             else:
                 v.grad.data.copy_(g.data)
 
-    def _construct_model_from_theta(self, theta):
-        model_new = self.model.new()
-        model_dict = self.model.state_dict()
+    def _construct_model_from_theta(self, theta_1, theta_2):
+        model_new_1 = self.model_1.new()
+        model_dict_1 = self.model_1.state_dict()
+
+        model_new_2 = self.model_2.new()
+        model_dict_2 = self.model_2.state_dict()
 
         params, offset = {}, 0
-        for k, v in self.model.named_parameters():
+        for k, v in self.model_1.named_parameters():
             v_length = np.prod(v.size())
-            params[k] = theta[offset: offset+v_length].view(v.size())
+            params[k] = theta_1[offset: offset+v_length].view(v.size())
             offset += v_length
 
-        assert offset == len(theta)
-        model_dict.update(params)
-        model_new.load_state_dict(model_dict)
-        return model_new.cuda()
+        assert offset == len(theta_1)
+        model_dict_1.update(params)
+        model_new_1.load_state_dict(model_dict_1)
+
+        params, offset = {}, 0
+        for k, v in self.model_2.named_parameters():
+            v_length = np.prod(v.size())
+            params[k] = theta_2[offset: offset+v_length].view(v.size())
+            offset += v_length
+
+        assert offset == len(theta_2)
+        model_dict_2.update(params)
+        model_new_2.load_state_dict(model_dict_2)
+
+        return model_new_1.cuda(), model_new_2.cuda()
 
     def _hessian_vector_product(self, vector_1, vector_2, input, target, index, r=1e-2):
         if index == 1:
             R = r / _concat(vector_1).norm()
             for p, v in zip(self.model_1.parameters(), vector_1):
                 p.data.add_(R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_p = torch.autograd.grad(loss, self.model_1.arch_parameters())
 
             for p, v in zip(self.model_1.parameters(), vector_1):
                 p.data.sub_(2*R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_n = torch.autograd.grad(loss, self.model_1.arch_parameters())
 
             for p, v in zip(self.model_1.parameters(), vector_1):
@@ -143,12 +159,12 @@ class Architect(object):
             R = r / _concat(vector_2).norm()
             for p, v in zip(self.model_2.parameters(), vector_2):
                 p.data.add_(R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_p = torch.autograd.grad(loss, self.model_1.arch_parameters())
 
             for p, v in zip(self.model_2.parameters(), vector_2):
                 p.data.sub_(2*R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_n = torch.autograd.grad(loss, self.model_1.arch_parameters())
 
             for p, v in zip(self.model_2.parameters(), vector_2):
@@ -161,12 +177,12 @@ class Architect(object):
             R = r / _concat(vector_1).norm()
             for p, v in zip(self.model_1.parameters(), vector_1):
                 p.data.add_(R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_p = torch.autograd.grad(loss, self.model_2.arch_parameters())
 
             for p, v in zip(self.model_1.parameters(), vector_1):
                 p.data.sub_(2*R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_n = torch.autograd.grad(loss, self.model_2.arch_parameters())
 
             for p, v in zip(self.model_1.parameters(), vector_1):
@@ -177,12 +193,12 @@ class Architect(object):
             R = r / _concat(vector_2).norm()
             for p, v in zip(self.model_2.parameters(), vector_2):
                 p.data.add_(R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_p = torch.autograd.grad(loss, self.model_2.arch_parameters())
 
             for p, v in zip(self.model_2.parameters(), vector_2):
                 p.data.sub_(2*R, v)
-            loss = self._get_loss_val(self, input, target)
+            loss = self._get_loss_val(input, target)
             grads_n = torch.autograd.grad(loss, self.model_2.arch_parameters())
 
             for p, v in zip(self.model_2.parameters(), vector_2):
