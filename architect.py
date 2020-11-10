@@ -139,6 +139,7 @@ class Architect(object):
         return model_new_1.cuda(), model_new_2.cuda()
 
     def _hessian_vector_product(self, vector_1, vector_2, input, target, index, r=1e-2):
+        # index = 1 means the grads are to be computed wrt model_1
         if index == 1:
             R = r / _concat(vector_1).norm()
             for p, v in zip(self.model_1.parameters(), vector_1):
@@ -173,6 +174,8 @@ class Architect(object):
             term_2 = [(x-y).div_(2*R) for x, y in zip(grads_p, grads_n)]
 
             return term_1+term_2
+
+        # index = 2 means the grads are to be computed wrt model_2
         else:
             R = r / _concat(vector_1).norm()
             for p, v in zip(self.model_1.parameters(), vector_1):
@@ -190,6 +193,7 @@ class Architect(object):
 
             term_1 = [(x-y).div_(2*R) for x, y in zip(grads_p, grads_n)]
 
+
             R = r / _concat(vector_2).norm()
             for p, v in zip(self.model_2.parameters(), vector_2):
                 p.data.add_(R, v)
@@ -206,6 +210,7 @@ class Architect(object):
                 p.data.add_(R, v)
 
             term_2 = [(x-y).div_(2*R) for x, y in zip(grads_p, grads_n)]
+
 
             return term_1+term_2
 

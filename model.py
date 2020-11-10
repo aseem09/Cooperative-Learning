@@ -67,7 +67,7 @@ class AuxiliaryHeadCIFAR(nn.Module):
     super(AuxiliaryHeadCIFAR, self).__init__()
     self.features = nn.Sequential(
       nn.ReLU(inplace=True),
-      nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False), # image size = 2 x 2
+      nn.AvgPool2d(5, stride=3, padding=0, count_include_pad=False),
       nn.Conv2d(C, 128, 1, bias=False),
       nn.BatchNorm2d(128),
       nn.ReLU(inplace=True),

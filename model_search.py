@@ -66,36 +66,27 @@ class Network(nn.Module):
 
     def __init__(self, C, num_classes, layers, criterion, steps=4, multiplier=4, stem_multiplier=3):
         super(Network, self).__init__()
-        # C = 36
         self._C = C
         self._num_classes = num_classes
-        # layers = 20
         self._layers = layers
         self._criterion = criterion
-        # steps = 4
         self._steps = steps
         self._multiplier = multiplier
 
-        # C_curr = no of filters = 3*36 = 108
         C_curr = stem_multiplier*C
         self.stem = nn.Sequential(
-            #  C_in is 3 and C_out is 108
             nn.Conv2d(3, C_curr, 3, padding=1, bias=False),
             nn.BatchNorm2d(C_curr)
         )
-
-        # C_prev_prev = 108, C_prev = 108, C_curr= 36
         C_prev_prev, C_prev, C_curr = C_curr, C_curr, C
         self.cells = nn.ModuleList()
         reduction_prev = False
-        for i in range(layers):  # for i in [0, ...19]
-            if i in [layers//3, 2*layers//3]:  # if i in [6, ...12]
-                # double channels if reduction is True
+        for i in range(layers): 
+            if i in [layers//3, 2*layers//3]:
                 C_curr *= 2
                 reduction = True
             else:
                 reduction = False
-            # multiplier is 4 always
             cell = Cell(steps, multiplier, C_prev_prev, C_prev,
                         C_curr, reduction, reduction_prev)
             reduction_prev = reduction
@@ -104,7 +95,6 @@ class Network(nn.Module):
 
         self.global_pooling = nn.AdaptiveAvgPool2d(1)
 
-        # last conversion step
         self.classifier = nn.Linear(C_prev, num_classes)
 
         self._initialize_alphas()

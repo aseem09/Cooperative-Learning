@@ -89,7 +89,6 @@ def main():
     logging.info('gpu device = %d' % args.gpu)
     logging.info("args = %s", args)
 
-# Loss Function of one Model
     criterion = nn.CrossEntropyLoss()
     criterion = criterion.cuda()
 
