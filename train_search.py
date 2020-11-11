@@ -58,7 +58,7 @@ parser.add_argument('--arch_learning_rate', type=float,
                     default=3e-4, help='learning rate for arch encoding')
 parser.add_argument('--arch_weight_decay', type=float,
                     default=1e-3, help='weight decay for arch encoding')
-parser.add_argument('--c_lambda', type=float, default=0.1,
+parser.add_argument('--c_lambda', type=float, default=0.05,
                     help='cooperative loss coefficient')
 args = parser.parse_args()
 
