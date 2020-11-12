@@ -65,19 +65,19 @@ args = parser.parse_args()
 # args.save = 'search-{}-{}'.format(args.save, time.strftime("%Y%m%d-%H%M%S"))
 # utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
 
-log_format = '%(asctime)s %(message)s'
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
-fh = logging.FileHandler('log.txt')
-fh.setFormatter(logging.Formatter(log_format))
-logging.getLogger().addHandler(fh)
+# log_format = '%(asctime)s %(message)s'
+# logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+#                     format=log_format, datefmt='%m/%d %I:%M:%S %p')
+# fh = logging.FileHandler('log.txt')
+# fh.setFormatter(logging.Formatter(log_format))
+# logging.getLogger().addHandler(fh)
 
 CIFAR_CLASSES = 10
 
 
 def main():
     if not torch.cuda.is_available():
-        logging.info('no gpu device available')
+        print('no gpu device available')
         sys.exit(1)
 
     np.random.seed(args.seed)
@@ -86,8 +86,8 @@ def main():
     torch.manual_seed(args.seed)
     cudnn.enabled = True
     torch.cuda.manual_seed(args.seed)
-    logging.info('gpu device = %d' % args.gpu)
-    logging.info("args = %s", args)
+    print('gpu device = %d' % args.gpu)
+    print("args = %s", args)
 
     criterion = nn.CrossEntropyLoss()
     criterion = criterion.cuda()
@@ -100,9 +100,9 @@ def main():
     model_1 = model_1.cuda()
     model_2 = model_2.cuda()
 
-    logging.info("Param size Model 1 = %fMB",
+    print("Param size Model 1 = %fMB",
                  utils.count_parameters_in_MB(model_1))
-    logging.info("Param size Model 2 = %fMB",
+    print("Param size Model 2 = %fMB",
                  utils.count_parameters_in_MB(model_2))
 
     optimizer_1 = torch.optim.SGD(
@@ -149,13 +149,13 @@ def main():
 
         lr = scheduler_1.get_lr()[0]
 
-        logging.info('Epoch %d lr %e', epoch, lr)
+        print('Epoch %d lr %e', epoch, lr)
 
         genotype_1 = model_1.genotype()
         genotype_2 = model_2.genotype()
 
-        logging.info('Genotype Model 1 = %s', genotype_1)
-        logging.info('Genotype Model 2 = %s', genotype_2)
+        print('Genotype Model 1 = %s', genotype_1)
+        print('Genotype Model 2 = %s', genotype_2)
 
         print(F.softmax(model_1.alphas_normal, dim=-1))
         print(F.softmax(model_1.alphas_reduce, dim=-1))
@@ -166,14 +166,14 @@ def main():
         # training
         train_acc_1, train_acc_2, train_obj = train(
             train_queue, valid_queue, model_1, model_2, architect, criterion, optimizer_1, optimizer_2, lr)
-        logging.info('Train_Acc Model 1 %f', train_acc_1)
-        logging.info('Train_Acc Model 2 %f', train_acc_2)
+        print('Train_Acc Model 1 %f', train_acc_1)
+        print('Train_Acc Model 2 %f', train_acc_2)
 
         # validation
         valid_acc_1, valid_obj_1, valid_acc_2, valid_obj_2 = infer(
             valid_queue, model_1, model_2, criterion)
-        logging.info('Valid_Acc Model 1 %f', valid_acc_1)
-        logging.info('Valid_Acc Model 2 %f', valid_acc_2)
+        print('Valid_Acc Model 1 %f', valid_acc_1)
+        print('Valid_Acc Model 2 %f', valid_acc_2)
 
         utils.save(model_1, os.path.join(args.save, 'weights1.pt'))
         utils.save(model_2, os.path.join(args.save, 'weights2.pt'))
@@ -230,7 +230,7 @@ def train(train_queue, valid_queue, model_1, model_2, architect, criterion, opti
         top5_2.update(prec5_2.item(), n)
 
         if step % args.report_freq == 0:
-            logging.info('Train %03d %f %e %f %f %f %f', step, loss, objs.avg,
+            print('Train %03d %f %e %f %f %f %f', step, loss, objs.avg,
                          top1_1.avg, top5_1.avg,  top1_2.avg, top5_2.avg)
 
     return top1_1.avg, top1_2.avg, objs.avg
@@ -273,7 +273,7 @@ def infer(valid_queue, model_1, model_2, criterion):
         top5_2.update(prec5_2.item(), n)
 
         if step % args.report_freq == 0:
-            logging.info('Valid %03d %e %e %f %f %f %f', step,
+            print('Valid %03d %e %e %f %f %f %f', step,
                          objs_1.avg, objs_2.avg, top1_1.avg, top5_1.avg, top1_2.avg, top5_2.avg)
 
     return top1_1.avg, objs_1.avg, top1_2.avg, objs_2.avg
