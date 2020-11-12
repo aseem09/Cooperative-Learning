@@ -19,7 +19,7 @@ from architect import Architect
 
 
 parser = argparse.ArgumentParser("cifar")
-parser.add_argument('--data', type=str, default='/ceph/aseem-volume/data/8',
+parser.add_argument('--data', type=str, default='/ceph/aseem-volume/data/9',
                     help='location of the data corpus')
 parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--learning_rate', type=float,
