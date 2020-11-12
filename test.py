@@ -32,16 +32,16 @@ parser.add_argument('--seed', type=int, default=0, help='random seed')
 parser.add_argument('--arch', type=str, default='DARTS', help='which architecture to use')
 args = parser.parse_args()
 
-log_format = '%(asctime)s %(message)s'
-logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-    format=log_format, datefmt='%m/%d %I:%M:%S %p')
+# log_format = '%(asctime)s %(message)s'
+# logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+#     format=log_format, datefmt='%m/%d %I:%M:%S %p')
 
 CIFAR_CLASSES = 10
 
 
 def main():
   if not torch.cuda.is_available():
-    logging.info('no gpu device available')
+    print('no gpu device available')
     sys.exit(1)
 
   np.random.seed(args.seed)
@@ -50,15 +50,15 @@ def main():
   torch.manual_seed(args.seed)
   cudnn.enabled=True
   torch.cuda.manual_seed(args.seed)
-  logging.info('gpu device = %d' % args.gpu)
-  logging.info("args = %s", args)
+  print('gpu device = %d' % args.gpu)
+  print("args = %s", args)
 
   genotype = eval("genotypes.%s" % args.arch)
   model = Network(args.init_channels, CIFAR_CLASSES, args.layers, args.auxiliary, genotype)
   model = model.cuda()
   utils.load(model, args.model_path)
 
-  logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
+  print("param size = %fMB", utils.count_parameters_in_MB(model))
 
   criterion = nn.CrossEntropyLoss()
   criterion = criterion.cuda()
@@ -71,7 +71,7 @@ def main():
 
   model.drop_path_prob = args.drop_path_prob
   test_acc, test_obj = infer(test_queue, model, criterion)
-  logging.info('test_acc %f', test_acc)
+  print('test_acc %f', test_acc)
 
 
 def infer(test_queue, model, criterion):
@@ -94,7 +94,7 @@ def infer(test_queue, model, criterion):
     top5.update(prec5.data[0], n)
 
     if step % args.report_freq == 0:
-      logging.info('test %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
+      print('test %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
 
   return top1.avg, objs.avg
 
