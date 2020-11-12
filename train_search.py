@@ -19,7 +19,7 @@ from architect import Architect
 
 
 parser = argparse.ArgumentParser("cifar")
-parser.add_argument('--data', type=str, default='../data',
+parser.add_argument('--data', type=str, default='/ceph/aseem-volume/data/8',
                     help='location of the data corpus')
 parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--learning_rate', type=float,
@@ -53,7 +53,7 @@ parser.add_argument('--grad_clip', type=float,
 parser.add_argument('--train_portion', type=float,
                     default=0.5, help='portion of training data')
 parser.add_argument('--unrolled', action='store_true',
-                    default=False, help='use one-step unrolled validation loss')
+                    default=True, help='use one-step unrolled validation loss')
 parser.add_argument('--arch_learning_rate', type=float,
                     default=3e-4, help='learning rate for arch encoding')
 parser.add_argument('--arch_weight_decay', type=float,
@@ -67,7 +67,7 @@ utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
-                    format=log_format, datefmt='%m/%d %I:%M:%S %p')
+    format=log_format, datefmt='%m/%d %I:%M:%S %p')
 fh = logging.FileHandler(os.path.join(args.save, 'log.txt'))
 fh.setFormatter(logging.Formatter(log_format))
 logging.getLogger().addHandler(fh)
