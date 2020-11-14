@@ -19,9 +19,9 @@ from architect import Architect
 
 
 parser = argparse.ArgumentParser("cifar")
-parser.add_argument('--data', type=str, default='/ceph/aseem-volume/data/9',
+parser.add_argument('--data', type=str, default='/ceph/aseem-volume/batch_12/data/',
                     help='location of the data corpus')
-parser.add_argument('--batch_size', type=int, default=8, help='batch size')
+parser.add_argument('--batch_size', type=int, default=10, help='batch size')
 parser.add_argument('--learning_rate', type=float,
                     default=0.025, help='init learning rate')
 parser.add_argument('--learning_rate_min', type=float,
@@ -51,7 +51,7 @@ parser.add_argument('--seed', type=int, default=2, help='random seed')
 parser.add_argument('--grad_clip', type=float,
                     default=5, help='gradient clipping')
 parser.add_argument('--train_portion', type=float,
-                    default=0.5, help='portion of training data')
+                    default=0.04, help='portion of training data')
 parser.add_argument('--unrolled', action='store_true',
                     default=True, help='use one-step unrolled validation loss')
 parser.add_argument('--arch_learning_rate', type=float,
@@ -133,7 +133,7 @@ def main():
     valid_queue = torch.utils.data.DataLoader(
         train_data, batch_size=args.batch_size,
         sampler=torch.utils.data.sampler.SubsetRandomSampler(
-            indices[split:num_train]),
+            indices[split:2*split]),
         pin_memory=True, num_workers=0)
 
     scheduler_1 = torch.optim.lr_scheduler.CosineAnnealingLR(

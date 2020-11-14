@@ -27,10 +27,9 @@ class Architect(object):
                                             lr=args.arch_learning_rate, betas=(0.5, 0.999), weight_decay=args.arch_weight_decay)
 
     def _compute_unrolled_model(self, input, target, eta, network_optimizer_1, network_optimizer_2):
-        loss_1 = self._get_loss_val(input, target)
+        loss = self._get_loss_val(input, target)
         theta_1 = _concat(self.model_1.parameters()).data
 
-        loss_2 = self._get_loss_val(input, target)
         theta_2 = _concat(self.model_2.parameters()).data
 
         try:
@@ -39,7 +38,7 @@ class Architect(object):
         except:
             moment_1 = torch.zeros_like(theta_1)
         dtheta_1 = _concat(torch.autograd.grad(
-            loss_1, self.model_1.parameters())).data + self.network_weight_decay*theta_1
+            loss, self.model_1.parameters(), retain_graph=True)).data + self.network_weight_decay*theta_1
 
         try:
             moment_2 = _concat(network_optimizer_2.state[v]['momentum_buffer']
@@ -48,7 +47,7 @@ class Architect(object):
             moment_2 = torch.zeros_like(theta_2)
 
         dtheta_2 = _concat(torch.autograd.grad(
-            loss_2, self.model_2.parameters())).data + self.network_weight_decay*theta_2
+            loss, self.model_2.parameters())).data + self.network_weight_decay*theta_2
 
         unrolled_model_1, unrolled_model_2 = self._construct_model_from_theta( theta_1.sub(eta, moment_1+dtheta_1), theta_2.sub(eta, moment_2+dtheta_2))
         return unrolled_model_1, unrolled_model_2
