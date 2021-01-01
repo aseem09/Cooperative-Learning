@@ -19,8 +19,8 @@ from architect import Architect
 
 
 parser = argparse.ArgumentParser("cifar")
-parser.add_argument('--data', type=str, default='/ceph/aseem-volume/full/search/05_8/data/', help='location of the data corpus')
-parser.add_argument('--batch_size', type=int, default=24, help='batch size')
+parser.add_argument('--data', type=str, default='/ceph/aseem-volume/full/search/05_13/data/', help='location of the data corpus')
+parser.add_argument('--batch_size', type=int, default=32, help='batch size')
 parser.add_argument('--learning_rate', type=float, default=0.025, help='init learning rate')
 parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
@@ -38,13 +38,13 @@ parser.add_argument('--save', type=str, default='EXP', help='experiment name')
 parser.add_argument('--seed', type=int, default=2, help='random seed')
 parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--train_portion', type=float, default=0.5, help='portion of training data')
-parser.add_argument('--unrolled', action='store_true', default=False, help='use one-step unrolled validation loss')
+parser.add_argument('--unrolled', action='store_true', default=True, help='use one-step unrolled validation loss')
 parser.add_argument('--arch_learning_rate', type=float, default=3e-4, help='learning rate for arch encoding')
 parser.add_argument('--arch_weight_decay', type=float, default=1e-3, help='weight decay for arch encoding')
 parser.add_argument('--c_lambda', type=float, default=0.05, help='cooperative loss coefficient')
 args = parser.parse_args()
 
-args.save = '/ceph/aseem-volume/full/search/05_8/logging'
+args.save = '/ceph/aseem-volume/full/search/05_13/logging'
 utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
 
 log_format = '%(asctime)s %(message)s'
@@ -123,7 +123,7 @@ def main():
     scheduler_2 = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer_2, float(args.epochs), eta_min=args.learning_rate_min)
 
-    architect = Architect(model_1, model_2, args.c_lambda, args)
+    architect = Architect(model_1, model_2, args.c_lambda, args, criterion)
 
     for epoch in range(args.epochs):
         scheduler_1.step()
@@ -190,16 +190,16 @@ def train(train_queue, valid_queue, model_1, model_2, architect, criterion, opti
         optimizer_1.zero_grad()
         optimizer_2.zero_grad()
 
-        logits_1 = model_1(input)
-        logits_2 = model_2(input)
-
-        loss = architect._get_loss_val(input, target)
+        loss = architect.compute_loss(input, target)
         loss.backward()
 
         nn.utils.clip_grad_norm_(model_1.parameters(), args.grad_clip)
         nn.utils.clip_grad_norm_(model_2.parameters(), args.grad_clip)
         optimizer_1.step()
         optimizer_2.step()
+
+        logits_1 = model_1(input)
+        logits_2 = model_2(input)
 
         prec1_1, prec5_1 = utils.accuracy(logits_1, target, topk=(1, 5))
         prec1_2, prec5_2 = utils.accuracy(logits_2, target, topk=(1, 5))
